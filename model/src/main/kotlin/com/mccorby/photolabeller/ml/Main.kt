@@ -2,15 +2,18 @@ package com.mccorby.photolabeller.ml
 
 import com.mccorby.photolabeller.ml.trainer.CifarTrainer
 import com.mccorby.photolabeller.ml.trainer.SharedConfig
-import org.bytedeco.javacpp.opencv_core
+import org.opencv.core.Mat
+import org.opencv.core.Size
+import org.opencv.imgcodecs.Imgcodecs
 import org.datavec.image.loader.CifarLoader
 import org.datavec.image.loader.NativeImageLoader
-import org.deeplearning4j.optimize.api.IterationListener
+import org.deeplearning4j.optimize.api.TrainingListener
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.ui.api.UIServer
 import org.deeplearning4j.ui.stats.StatsListener
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage
 import org.deeplearning4j.util.ModelSerializer
+import org.opencv.imgproc.Imgproc
 import java.io.File
 import java.util.*
 
@@ -22,7 +25,7 @@ fun main(args: Array<String>) {
         val numLabels = CifarLoader.NUM_LABELS
         val saveFile = "cifar_federated-${Date().time}.zip"
 
-        val numEpochs = 50
+        val numEpochs = 10
         val numSamples = 10000
 
         val config = SharedConfig(32, 3, 100)
@@ -53,10 +56,10 @@ fun predict(modelFile: String, imageFile: String) {
     println(eval.stats())
 
     val file = File(imageFile)
-    val resizedImage = opencv_core.Mat()
-    val sz = opencv_core.Size(32, 32)
-    val opencvImage = org.bytedeco.javacpp.opencv_imgcodecs.imread(file.absolutePath)
-    org.bytedeco.javacpp.opencv_imgproc.resize(opencvImage, resizedImage, sz)
+    val resizedImage = Mat()
+    val sz = Size(32.0, 32.0)
+    val opencvImage = Imgcodecs.imread(file.absolutePath)
+    Imgproc.resize(opencvImage, resizedImage, sz)
 
     val nativeImageLoader = NativeImageLoader()
     val image = nativeImageLoader.asMatrix(resizedImage)
@@ -65,7 +68,7 @@ fun predict(modelFile: String, imageFile: String) {
     println(result.joinToString(", ", prefix = "[", postfix = "]"))
 }
 
-private fun getVisualization(visualization: String?): IterationListener {
+private fun getVisualization(visualization: String?): TrainingListener {
     return when (visualization) {
         "web" -> {
             //Initialize the user interface backend
